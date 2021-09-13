@@ -94,3 +94,27 @@ resource "aws_route_table_association" "Private_RTA" {
     route_table_id = aws_route_table.Private_RT.id
   
 }
+
+resource "aws_eip" "myeip" {
+  vpc = true
+  tags = {
+    "Name" = "myeip"
+  }
+  
+}
+
+resource "aws_nat_gateway" "myNat" {
+  allocation_id = aws_eip.myeip.id
+  subnet_id = aws_subnet.mypublic.id
+  tags = {
+    "Name" = "myNat"
+  }
+  
+}
+
+resource "aws_route" "myprivate_route" {
+  route_table_id = aws_route_table.Private_RT.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.myNat.id
+  
+}
