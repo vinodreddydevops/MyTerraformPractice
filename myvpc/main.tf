@@ -51,15 +51,6 @@ resource "aws_subnet" "myprivate" {
 
 }
 
-resource "aws_subnet" "myprivate_2" {
-  cidr_block        = "192.168.3.0/24"
-  vpc_id            = aws_vpc.myvpc.id
-  availability_zone = "us-east-2b"
-  tags = {
-    "Name" = "myprivate_2"
-  }
-}
-
 # Update main route table of vpc into public route table 
 resource "aws_default_route_table" "Public_RT" {
   default_route_table_id = aws_vpc.myvpc.main_route_table_id
@@ -117,4 +108,39 @@ resource "aws_route" "myprivate_route" {
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id = aws_nat_gateway.myNat.id
   
+}
+
+resource "aws_security_group" "Public_SG" {
+  vpc_id = aws_vpc.myvpc.id
+  tags = {
+    Name = "Public_SG"
+  }
+
+}
+
+resource "aws_security_group" "Private_SG" {
+  vpc_id = aws_vpc.myvpc.id
+  tags = {
+    Name = "Private_SG"
+  }
+}
+
+resource "aws_security_group_rule" "public_ingress_rules" {
+  for_each = var.Public_SG
+  type = "ingress"
+  from_port = each.value.from
+  to_port = each.value.to
+  cidr_blocks = ["0.0.0.0/0"]
+  protocol = each.value.protocol
+  security_group_id = aws_security_group.Public_SG.id
+}
+
+resource "aws_security_group_rule" "private_ingress_rules" {
+  for_each = var.Private_SG
+  type = "ingress"
+  from_port = each.value.from
+  to_port = each.value.to
+  protocol = each.value.protocol
+  cidr_blocks = [aws_subnet.mypublic.cidr_block]
+  security_group_id = aws_security_group.Private_SG.id
 }
